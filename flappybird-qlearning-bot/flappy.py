@@ -245,6 +245,9 @@ def mainGame(movementInfo):
     playerMaxVelY =  10   # max vel along Y, max descend speed
     playerMinVelY =  -8   # min vel along Y, max ascend speed
     playerAccY    =   1   # players downward accleration
+    playerRot     =  45   # player's rotation
+    playerVelRot  =   3   # angular speed
+    playerRotThr  =  20   # rotation threshold
     playerFlapAcc =  -9   # players speed on flapping
     playerFlapped = False # True when player flaps
 
@@ -286,6 +289,7 @@ def mainGame(movementInfo):
                 'lowerPipes': lowerPipes,
                 'score': score,
                 'playerVelY': playerVelY,
+                'playerRot': playerRot
             }
 
         # check for score
@@ -301,12 +305,16 @@ def mainGame(movementInfo):
             playerIndex = next(playerIndexGen)
         loopIter = (loopIter + 1) % 30
         basex = -((-basex + 100) % baseShift)
+        
+        if playerRot > -90:
+            playerRot -= playerVelRot
 
         # player's movement
         if playerVelY < playerMaxVelY and not playerFlapped:
             playerVelY += playerAccY
         if playerFlapped:
             playerFlapped = False
+            playerRot = 45
         playerHeight = IMAGES['player'][playerIndex].get_height()
         playery += min(playerVelY, BASEY - playery - playerHeight)
 
@@ -334,13 +342,20 @@ def mainGame(movementInfo):
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             SCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
             SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
+            
+        
 
 
 
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
         # print score so player overlaps the score
         showScore(score)
-        SCREEN.blit(IMAGES['player'][playerIndex], (playerx, playery))
+        visibleRot = playerRotThr
+        if playerRot <= playerRotThr:
+            visibleRot = playerRot
+        
+        playerSurface = pygame.transform.rotate(IMAGES['player'][playerIndex], visibleRot)
+        SCREEN.blit(playerSurface, (playerx, playery))
 
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -354,6 +369,8 @@ def showGameOverScreen(crashInfo):
     playerHeight = IMAGES['player'][0].get_height()
     playerVelY = crashInfo['playerVelY']
     playerAccY = 2
+    playerRot = crashInfo['playerRot']
+    playerVelRot = 7
 
     basex = crashInfo['basex']
 
@@ -365,7 +382,7 @@ def showGameOverScreen(crashInfo):
         SOUNDS['die'].play()
 
     while True:
-        ''' De-activated press key functionality
+        #De-activated press key functionality
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
@@ -373,8 +390,8 @@ def showGameOverScreen(crashInfo):
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 if playery + playerHeight >= BASEY - 1:
                     return
-        '''
-        return ### Must remove to activate press-key functionality
+
+        #return ### Must remove to activate press-key functionality
 
         # player y shift
         if playery + playerHeight < BASEY - 1:
@@ -383,6 +400,11 @@ def showGameOverScreen(crashInfo):
         # player velocity change
         if playerVelY < 15:
             playerVelY += playerAccY
+            
+        # rotate only when it's a pipe crash
+        if not crashInfo['groundCrash']:
+            if playerRot > -90:
+                playerRot -= playerVelRot
 
         # draw sprites
         SCREEN.blit(IMAGES['background'], (0,0))
@@ -393,7 +415,11 @@ def showGameOverScreen(crashInfo):
 
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
         showScore(score)
-        SCREEN.blit(IMAGES['player'][1], (playerx,playery))
+        #SCREEN.blit(IMAGES['player'][1], (playerx,playery))
+        
+        playerSurface = pygame.transform.rotate(IMAGES['player'][1], playerRot)
+        SCREEN.blit(playerSurface, (playerx,playery))
+        SCREEN.blit(IMAGES['gameover'], (50, 180))
 
         FPSCLOCK.tick(FPS)
         pygame.display.update()

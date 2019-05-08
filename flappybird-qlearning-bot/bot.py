@@ -67,11 +67,12 @@ class Bot(object):
             res_state = exp[2]
 
             # Select reward
-            if t == 1 or t == 2:
-                cur_reward = self.r[1]
-            elif high_death_flag and act:
+            if high_death_flag:
                 cur_reward = self.r[1]
                 high_death_flag = False
+            if t == 1: #or t == 2:
+                cur_reward = self.r[1]
+            
             else:
                 cur_reward = self.r[0]
 
